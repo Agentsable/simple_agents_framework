@@ -48,3 +48,7 @@ Follow-up asks resume the previous session, so context carries over.
 The SDK spawns whatever `claude` is first on `PATH`. Some tools install a
 wrapper there that never returns headlessly — if `ask()` hangs, pass
 `cli_path=Path.home() / ".local/bin/claude"`.
+
+## License
+
+MIT — see `LICENSE`.

@@ -1,12 +1,14 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "simple_agents_framework"
-version = "0.1.0"
+version = "0.1.1"
 description = "A markdown file in, a callable agent out. One Python file over the Claude Agent SDK."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{ name = "Agentsable" }]
 dependencies = ["claude-agent-sdk>=0.1.52"]
