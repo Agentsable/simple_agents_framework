@@ -7,8 +7,11 @@ A markdown file in, a callable agent out. One Python file over the
 import simple_agents_framework as saf
 
 agent = saf.create_agent_from_markdown("doc_reader.md", API_KEY)
-agent.ask("which markdown files are here?")   # -> str
-agent.ask_html("...")                         # same, streamed as HTML in Jupyter
+agent.ask("which markdown files are here?")            # -> str
+agent.ask("...", stream=saf.text_stream)               # same, streamed to stdout
+
+from plugins.streaming.jupyter_html import html_stream
+agent.ask("...", stream=html_stream)                   # streamed as HTML in Jupyter
 ```
 
 ## Agent files
@@ -27,19 +30,34 @@ Anything else passes through as a `ClaudeAgentOptions` kwarg:
 
 ## API
 
-- `ask(prompt) -> str` — blocks, works inside Jupyter too.
-- `ask_html(prompt) -> str` — same run, streamed into the cell: blue sent,
-  green agent, slate thinking, amber tool call, cyan tool result, red error.
-  The agent's text fills in token by token; tool calls and results appear whole.
-- `ask_async(prompt, on_event=None)` — `on_event(kind, title, body, replace)`
-  per update. `replace=True` means "same block, more text": redraw the last
-  thing you drew instead of appending. Build your own renderer on this.
+- `ask(prompt, stream=None) -> str` — blocks, works inside Jupyter too.
+  `stream` is an output plugin; `None` renders nothing.
+- `ask_async(prompt, stream=None, on_event=None)` — same, awaitable.
+  `on_event` is the raw callback if you don't want a plugin's setup/teardown.
+
+## Output plugins
+
+An output plugin is `stream(prompt)` -> context manager yielding
+`emit(kind, title, body, replace)`. `kind` is one of `sent`, `received`,
+`thinking`, `tool use`, `tool result`, `error`. `replace=True` means "same
+block, more text": redraw the last thing you drew instead of appending.
+
+The framework ships one default and imports no plugin:
+
+- `saf.text_stream` — built in, plain text to stdout.
+- `plugins/streaming/jupyter_html.py` → `html_stream` — color-coded cards in a
+  Jupyter cell: blue sent, green agent, slate thinking, amber tool call, cyan
+  tool result, red error. The agent's text fills in token by token.
+
+Writing your own is ~10 lines — copy `text_stream` and drop it in
+`plugins/streaming/`.
 
 Follow-up asks resume the previous session, so context carries over.
 
 ## Files
 
-- `simple_agents_framework.py` — the whole thing. `python simple_agents_framework.py` runs its self-check.
+- `simple_agents_framework.py` — the whole framework, plugin-free. `python simple_agents_framework.py` runs its self-check.
+- `plugins/streaming/` — output plugins. Each file runs its own self-check the same way.
 - `doc_reader.md` — example agent: reads the markdown in a project and answers questions about it.
 - `demo.ipynb` — end-to-end walkthrough with streamed output.
 

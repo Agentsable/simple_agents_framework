@@ -4,9 +4,18 @@
     agent = saf.create_agent_from_markdown("researcher.md", anthropic_api_key)
     print(agent.ask("what changed in the repo today?"))
 
-In a Jupyter notebook, agent.ask_html(...) streams the same run as color-coded
-HTML: the prompt, the agent's text as it is typed, each tool call, and each
-tool result.
+Pass `stream=` to watch the run as it happens. The built-in `text_stream`
+writes to stdout; richer renderers live in `plugins/streaming/` and this
+module never imports them:
+
+    agent.ask("...", stream=saf.text_stream)                  # built in
+    from plugins.streaming.jupyter_html import html_stream    # plugin
+    agent.ask("...", stream=html_stream)
+
+A streaming plugin is `stream(prompt)` -> context manager yielding
+`emit(kind, title, body, replace)`. `kind` is one of sent / received /
+thinking / tool use / tool result / error. `replace=True` means "same block,
+more text": redraw what you last drew instead of appending.
 
 Markdown file = optional YAML-ish frontmatter + body (the system prompt):
 
@@ -20,12 +29,12 @@ Markdown file = optional YAML-ish frontmatter + body (the system prompt):
 """
 
 import asyncio
-import html
 import json
 import os
 import re
+import sys
 import threading
-import time
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 
 from claude_agent_sdk import (
@@ -40,17 +49,7 @@ from claude_agent_sdk import (
     query,
 )
 
-__all__ = ["Agent", "create_agent_from_markdown"]
-
-# label -> accent color, one per kind of thing that shows up in a run.
-COLORS = {
-    "sent": "#2563eb",      # blue   - what you sent
-    "received": "#16a34a",  # green  - what the agent said
-    "thinking": "#64748b",  # slate  - reasoning
-    "tool use": "#d97706",  # amber  - tool call
-    "tool result": "#0891b2",  # cyan - tool output
-    "error": "#dc2626",     # red
-}
+__all__ = ["Agent", "create_agent_from_markdown", "text_stream"]
 
 
 _loop = None
@@ -70,24 +69,44 @@ def _run(coro):
     return asyncio.run_coroutine_threadsafe(coro, _loop).result()
 
 
-def _card(kind, title, body):
-    color = COLORS[kind]  # kind is always one of the six above
-    return (
-        f'<div style="border-left:3px solid {color};background:{color}14;'
-        'padding:6px 10px;margin:4px 0;border-radius:0 4px 4px 0;'
-        'font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px">'
-        f'<div style="color:{color};font-weight:600;letter-spacing:.04em;'
-        f'text-transform:uppercase;font-size:10.5px">{html.escape(title)}</div>'
-        f'<div style="white-space:pre-wrap;color:inherit;opacity:.9">{html.escape(body)}</div>'
-        "</div>"
-    )
-
-
 def _clip(text, limit=1200):
     if isinstance(text, list):  # tool results arrive as content blocks
         text = "\n".join(b.get("text", str(b)) if isinstance(b, dict) else str(b) for b in text)
     text = str(text).strip()
     return text if len(text) <= limit else text[:limit] + f"\n… (+{len(text) - limit} chars)"
+
+
+@contextmanager
+def text_stream(prompt, file=None):
+    """Default output stream: plain text to stdout, no dependencies.
+
+    ponytail: `replace=True` bodies are cumulative, so print only the new tail
+    rather than redrawing — a terminal can't take a card back.
+    """
+    out = file or sys.stdout
+    print(f"\n> {prompt}\n", file=out, flush=True)
+    shown = [""]  # how much of the currently open block is already on screen
+
+    def emit(kind, title, body, replace):
+        if replace:
+            if body.startswith(shown[0]):
+                body = body[len(shown[0]):]
+            shown[0] += body
+            print(body, end="", file=out, flush=True)
+            return
+        if shown[0]:
+            print(file=out)
+            shown[0] = ""
+        if kind == "received":
+            print(body, file=out, flush=True)
+        else:
+            print(f"[{title}] {body}", file=out, flush=True)
+
+    try:
+        yield emit
+    finally:
+        if shown[0]:
+            print(file=out, flush=True)
 
 
 def _parse_markdown(text):
@@ -104,43 +123,20 @@ class Agent:
         self.name = name
         self.options = options
 
-    def ask(self, prompt):
-        """Send a prompt, return the agent's final text. Blocks until done."""
-        return _run(self.ask_async(prompt))
+    def ask(self, prompt, stream=None):
+        """Send a prompt, return the agent's final text. Blocks until done.
 
-    def ask_html(self, prompt):
-        """Same, but stream the run into a Jupyter cell as color-coded HTML."""
-        from IPython.display import HTML, display
+        stream: a streaming plugin, e.g. `text_stream`. None renders nothing.
+        """
+        return _run(self.ask_async(prompt, stream))
 
-        cards = [_card("sent", "sent", prompt)]
-        handle = display(HTML("".join(cards)), display_id=True)
-        state = {"open": False, "drawn": 0.0}
+    async def ask_async(self, prompt, stream=None, on_event=None):
+        """Run the prompt. `stream` is a plugin; `on_event(kind, title, body,
+        replace)` is the same contract without the setup/teardown."""
+        with (stream(prompt) if stream else nullcontext(on_event)) as emit:
+            return await self._run_query(prompt, emit or (lambda *a: None))
 
-        def flush(force=False):
-            # ponytail: ~20fps. Every token would be its own display update,
-            # each re-joining the whole card list. force=True on the last draw.
-            if force or time.monotonic() - state["drawn"] > 0.05:
-                state["drawn"] = time.monotonic()
-                handle.update(HTML("".join(cards)))
-
-        def on_event(kind, title, body, replace):
-            card = _card(kind, title, body)
-            if replace and state["open"]:
-                cards[-1] = card
-            else:
-                cards.append(card)
-            state["open"] = replace
-            flush(force=not replace)
-
-        try:
-            return _run(self.ask_async(prompt, on_event))
-        finally:
-            flush(force=True)  # the throttle may have skipped the last tokens
-
-    async def ask_async(self, prompt, on_event=None):
-        """Run the prompt. on_event(kind, title, body, replace) per update;
-        replace=True means "same block, more text" — redraw, don't append."""
-        emit = on_event or (lambda *a: None)
+    async def _run_query(self, prompt, emit):
         partial = self.options.include_partial_messages
         text, buf = [], ""
         async for message in query(prompt=prompt, options=self.options):
@@ -202,7 +198,7 @@ def create_agent_from_markdown(markdown_file_path, anthropic_api_key=None, **ove
         # permission_mode="acceptEdits" (or "plan") if bypass is too much.
         permission_mode=meta.get("permission_mode", "bypassPermissions"),
         # ponytail: always on rather than a flag — the extra pipe traffic is
-        # cheap and it's what makes ask_html fill in word by word.
+        # cheap and it's what makes streams fill in word by word.
         include_partial_messages=True,
     )
     if "model" in meta:
@@ -215,6 +211,8 @@ def create_agent_from_markdown(markdown_file_path, anthropic_api_key=None, **ove
 
 
 if __name__ == "__main__":
+    import io
+
     meta, body = _parse_markdown(
         "---\nname: bob\ntools: Read, Grep\n---\nYou are bob.\n\n---\nnot frontmatter\n"
     )
@@ -223,6 +221,14 @@ if __name__ == "__main__":
 
     meta, body = _parse_markdown("Just a prompt.")
     assert meta == {} and body == "Just a prompt."
+
+    # default stream: cumulative deltas print once, whole blocks get a label.
+    sink = io.StringIO()
+    with text_stream("hi", file=sink) as emit:
+        emit("received", "bob", "Hel", True)
+        emit("received", "bob", "Hello", True)
+        emit("tool use", "Read", "{}", False)
+    assert sink.getvalue() == "\n> hi\n\nHello\n[Read] {}\n", repr(sink.getvalue())
 
     tmp = Path("_saf_selfcheck.md")
     tmp.write_text("---\nname: bob\nmodel: claude-opus-5\ntools: Read\n---\nYou are bob.")
@@ -233,8 +239,8 @@ if __name__ == "__main__":
         assert a.options.env["ANTHROPIC_API_KEY"] == "sk-test"
         assert a.options.include_partial_messages is True
 
-        # token streaming: deltas redraw one card, the finished block must not
-        # append a second copy of the same text.
+        # token streaming: deltas redraw one block, the finished block must not
+        # emit a second copy of the same text.
         import claude_agent_sdk as _sdk
 
         async def fake_query(prompt, options):
@@ -251,11 +257,16 @@ if __name__ == "__main__":
 
         global query
         query, seen = fake_query, []
-        out = _run(a.ask_async("hi", lambda *e: seen.append(e)))
+        out = _run(a.ask_async("hi", on_event=lambda *e: seen.append(e)))
         assert out == "Hello there", out
         assert [e[2] for e in seen] == ["Hel", "Hello ", "Hello there"], seen
         assert all(e[3] for e in seen), "deltas must be replace=True"
         assert a.options.resume == "sess-1"
+
+        # a plugin is just a context manager; ask() drives it end to end.
+        sink = io.StringIO()
+        assert a.ask("hi", stream=lambda p: text_stream(p, file=sink)) == "Hello there"
+        assert sink.getvalue() == "\n> hi\n\nHello there\n", repr(sink.getvalue())
     finally:
         tmp.unlink()
     print("ok")

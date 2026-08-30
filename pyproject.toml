@@ -18,3 +18,4 @@ Homepage = "https://github.com/Agentsable/simple_agents_framework"
 
 [tool.setuptools]
 py-modules = ["simple_agents_framework"]
+packages = ["plugins", "plugins.streaming"]
