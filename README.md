@@ -60,6 +60,8 @@ Follow-up asks resume the previous session, so context carries over.
 - `plugins/streaming/` — output plugins. Each file runs its own self-check the same way.
 - `doc_reader.md` — example agent: reads the markdown in a project and answers questions about it.
 - `demo.ipynb` — end-to-end walkthrough with streamed output.
+- `colab_demo.ipynb` — same, for Colab: installs the package, mounts Drive, prompts for your API key.
+  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Agentsable/simple_agents_framework/blob/main/colab_demo.ipynb)
 
 ## Gotcha
 
