@@ -1,0 +1,15 @@
+{
+  "_comment": "Every view of the app the UI capture covers. Each view opens `url` (relative to project.json app.base_url) and clicks the buttons or tabs in `clicks` (accessible name, exact match, first match). Replace the example with your app's pages, panels and tabs, and add a view whenever the app gets a new one. `ready` (top level, or per view to override) tells the capture when the app has finished loading: a CSS selector that must be visible, or \"js:<expression>\" that must be true. Without it the capture waits for network idle for at most 5 s, which live apps (streaming, polling, websockets) never reach.",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "ready": null,
+  "views": [
+    {
+      "name": "home",
+      "url": "/",
+      "clicks": []
+    }
+  ]
+}

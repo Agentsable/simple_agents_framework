@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- request-status: planning (steps 2-4) | in-progress (step 5) | done (step 6) -->
+<meta name="request-status" content="planning">
+<meta name="request-started" content="{{YYYY-MM-DD HH:MM}}">
+<title>{{Title in a few words}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Design: new_design/Main.dc.html. The page source is plain sections written by Claude; the header
+     KPIs, timeline and diff are drawn by ../assets/report.js from derived.js (built by metrics.py). */
+  :root {
+    --bg:#F3F4F6; --card:#FFFFFF; --fg:#15171C; --text:#1E2230; --muted:#4A5160; --label:#5A6170;
+    --line:#E3E6EB; --line2:#ECEEF2; --soft:#F6F7F9; --chip:#EEF0F4; --accent:#2347C5; --link:#2347C5;
+    --ok:#17663F; --ok-soft:#E6F4EC; --ok-tint:#F5FAF7; --warn:#9A4A07; --warn-soft:#FCEFE3; --warn-tint:#FDF7F1;
+    --fail:#A3362A; --fail-soft:#F8E4E1; --par:#5B21B6; --par-line:#A78BFA;
+    --band:#121418; --band2:#16181D; --band3:#1A1D23; --band-line:#2A2E37; --band-fg:#E8EAEE; --band-muted:#A9B1C2; --band-text:#C5CBD6; --band-accent:#8FA6FF;
+    --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --display: "Space Grotesk", Inter, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#0E1013; --card:#171A20; --fg:#ECEEF2; --text:#DDE1E8; --muted:#A9B1C2; --label:#98A0AF;
+    --line:#2A2E37; --line2:#23272F; --soft:#1C2027; --chip:#232831; --accent:#8FA6FF; --link:#8FA6FF;
+    --ok:#3DD68C; --ok-soft:#14301F; --ok-tint:#132219; --warn:#FFB86B; --warn-soft:#3A2812; --warn-tint:#241C12;
+    --fail:#F19A8C; --fail-soft:#3A1D19; --par:#C4B5FD; --par-line:#7C3AED; color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --bg:#0E1013; --card:#171A20; --fg:#ECEEF2; --text:#DDE1E8; --muted:#A9B1C2; --label:#98A0AF;
+    --line:#2A2E37; --line2:#23272F; --soft:#1C2027; --chip:#232831; --accent:#8FA6FF; --link:#8FA6FF;
+    --ok:#3DD68C; --ok-soft:#14301F; --ok-tint:#132219; --warn:#FFB86B; --warn-soft:#3A2812; --warn-tint:#241C12;
+    --fail:#F19A8C; --fail-soft:#3A1D19; --par:#C4B5FD; --par-line:#7C3AED; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.6 var(--sans); }
+  a { color: var(--link); }
+  h1, h2, h3 { text-wrap: balance; } p, li { text-wrap: pretty; }
+  code { font-family: var(--mono); font-size: .86em; background: var(--chip); color: var(--text); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+  /* header band */
+  .band { background: var(--band); color: var(--band-fg); }
+  .band .wrap { padding-block: 28px 36px; display: flex; flex-direction: column; gap: 24px; }
+  .topline { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .back { color: var(--band-muted); text-decoration: none; font-size: 14px; }
+  .back:hover { color: var(--band-fg); }
+  .path { font: 12px var(--mono); color: var(--band-muted); background: #1D2027; padding: 5px 10px; border-radius: 6px; overflow-wrap: anywhere; }
+  .headrow { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px; }
+  .headtext { display: flex; flex-direction: column; gap: 12px; flex: 1 1 520px; min-width: 0; }
+  .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--band-accent); }
+  h1 { margin: 0; font: 600 clamp(30px, 5vw, 48px)/1.08 var(--display); letter-spacing: -.02em; color: #FFFFFF; }
+  .lede { margin: 0; font-size: 17px; line-height: 1.55; color: var(--band-text); max-width: 720px; }
+  .lede:empty { display: none; }
+  .verdict-box { display: flex; flex-direction: column; gap: 8px; background: var(--band3); border: 1px solid var(--band-line); border-radius: 12px; padding: 16px 20px; min-width: 200px; }
+  .verdict-box .lbl { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--band-muted); }
+  .vpill { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 15px; padding: 5px 12px; border-radius: 999px; background: #2A2E37; color: var(--band-fg); }
+  .vpill.pass { background: #3DD68C; color: #0B2A1A; } .vpill.fail { background: #F19A8C; color: #3A0F0A; } .vpill.pending { background: #FFB86B; color: #3A2205; }
+  .vsub { font-size: 13px; color: var(--band-muted); }
+  .metaline { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--band-muted); }
+  .metaline b { font-weight: 400; color: var(--band-fg); }
+  .metaline .mono { font-family: var(--mono); }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 1px; background: var(--band-line); border: 1px solid var(--band-line); border-radius: 12px; overflow: hidden; }
+  .kpis:empty { display: none; }
+  .kpi { background: var(--band2); padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .kpi .k { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--band-muted); }
+  .kpi .v { font: 600 28px/1.15 var(--display); color: #FFFFFF; font-variant-numeric: tabular-nums; }
+  .kpi .v small { font-size: 15px; color: var(--band-muted); font-weight: 500; }
+  .kpi .d { font-size: 13px; color: var(--band-text); }
+  .kpi .ok { color: #3DD68C; } .kpi .warn { color: #FFB86B; }
+
+  /* nav */
+  nav.sections { background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
+  nav.sections .wrap { padding-block: 10px; display: flex; gap: 6px 20px; font-size: 14px; font-weight: 500; overflow-x: auto; white-space: nowrap; }
+  nav.sections a { text-decoration: none; color: var(--muted); }
+  nav.sections a:hover { color: var(--accent); }
+
+  /* sections */
+  main.wrap { padding-block: 36px 80px; display: flex; flex-direction: column; gap: 28px; counter-reset: sec; }
+  section, .derived { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; min-width: 0; scroll-margin-top: 56px; }
+  section > h2, .derived > h2 { counter-increment: sec; display: flex; align-items: baseline; gap: 12px; margin: 0 0 14px; font: 600 24px/1.2 var(--display); letter-spacing: -.01em; color: var(--fg); }
+  section > h2::before, .derived > h2::before { content: counter(sec, decimal-leading-zero); font: 500 13px var(--mono); color: var(--accent); }
+  h3 { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--label); margin: 22px 0 8px; }
+  p { margin: 8px 0; color: var(--text); }
+  ul, ol { margin: 0; padding-left: 20px; } li { margin: 6px 0; color: var(--text); }
+  .duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px; align-items: start; }
+  #request pre { font: 14px/1.65 var(--mono); background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); max-height: 420px; overflow: auto; margin: 0; }
+  pre { font: 13px/1.6 var(--mono); background: var(--band); color: #D7DCE5; border-radius: 10px; padding: 14px 18px; white-space: pre; overflow: auto; max-height: 420px; margin: 8px 0; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+  th { text-align: left; font-weight: 600; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--label); padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  td { padding: 11px 12px; border-bottom: 1px solid var(--line2); vertical-align: top; color: var(--text); }
+  tr:last-child td { border-bottom: 0; }
+  #tasks td:first-child { font: 500 13px var(--mono); color: var(--accent); white-space: nowrap; }
+  #interpretations { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 12px; }
+  #interpretations > h2, #interpretations > p { grid-column: 1 / -1; }
+  .interp { border: 1px solid var(--line); border-radius: 10px; padding: 16px; background: var(--soft); font-size: 14px; color: var(--text); }
+  .interp q { display: block; font-style: italic; font-size: 15px; color: var(--fg); margin-bottom: 6px; quotes: "“" "”"; }
+  #plan ol { list-style: none; padding: 0; counter-reset: stage; display: grid; gap: 8px; }
+  #plan ol > li { counter-increment: stage; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 10px 64px; position: relative; background: var(--soft); margin: 0; }
+  #plan ol > li::before { content: "Step " counter(stage); position: absolute; left: 14px; top: 11px; font: 600 12px var(--sans); color: var(--label); }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid #C9CED8; color: var(--muted); margin-right: 8px; }
+  .tag.parallel { border-color: var(--par-line); color: var(--par); }
+  figure { margin: 14px 0; } figure img { max-width: 100%; border: 1px solid var(--line); border-radius: 10px; display: block; }
+  figcaption { color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  /* errors: each table row becomes a card. Columns: # | what | cause | (root cause) | resolution | prevention */
+  table.errs, table.errs tbody { display: block; }
+  table.errs tr:first-child { display: none; }
+  table.errs tr { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 12px; background: var(--card); }
+  table.errs td { border: 0; border-top: 1px solid var(--line2); padding: 14px 18px; font-size: 14px; }
+  table.errs td::before { display: block; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--label); margin-bottom: 4px; }
+  table.errs td:first-child { grid-column: 1 / -1; border-top: 0; padding: 12px 18px; font: 600 15px var(--mono); }
+  table.errs td:first-child::before { content: none; }
+  table.errs td:nth-child(2)::before { content: "What went wrong"; }
+  table.errs td:nth-child(3)::before { content: "Cause"; }
+  table.errs:not(.rc) td:nth-child(4)::before { content: "Resolution"; }
+  table.errs:not(.rc) td:nth-child(5)::before { content: "Prevention"; }
+  table.errs.rc td:nth-child(4)::before { content: "Root cause (why-chain)"; }
+  table.errs.rc td:nth-child(5)::before { content: "Resolution"; }
+  table.errs.rc td:nth-child(6)::before { content: "Prevention"; }
+  table.errs td:has(.prev.applied) { background: var(--ok-tint); }
+  table.errs td:has(.prev.suggested) { background: var(--warn-tint); }
+  .prev { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 9px; border-radius: 999px; margin-right: 6px; }
+  .prev.applied { color: var(--ok); background: var(--ok-soft); } .prev.suggested { color: var(--warn); background: var(--warn-soft); }
+
+  /* review */
+  .verdict { display: inline-flex; font-weight: 700; font-size: 14px; padding: 3px 12px; border-radius: 999px; }
+  .verdict.pass { color: var(--ok); background: var(--ok-soft); } .verdict.fail { color: var(--fail); background: var(--fail-soft); }
+  .checks { list-style: none; padding-left: 0; display: grid; gap: 8px; }
+  .checks li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; margin: 0; }
+  .checks li::before { content: "○"; color: var(--label); } .checks li.ok::before { content: "✓"; color: var(--ok); font-weight: 700; } .checks li.no::before { content: "✗"; color: var(--fail); font-weight: 700; }
+
+  /* follow-ups: cards */
+  ol.next { list-style: none; padding: 0; counter-reset: fu; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 14px; }
+  ol.next > li { counter-increment: fu; border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 8px; margin: 0; position: relative; }
+  ol.next > li::before { content: counter(fu); font: 600 26px/1 var(--display); color: var(--accent); }
+  ol.next b { font-weight: 600; font-size: 15px; line-height: 1.4; color: var(--fg); }
+  ol.next br { display: none; }
+  ol.next .why { font-size: 13px; line-height: 1.55; color: var(--muted); }
+  .size { position: absolute; top: 18px; right: 18px; font-size: 12px; font-weight: 600; border: 1px solid #C9CED8; border-radius: 6px; padding: 2px 8px; color: var(--muted); }
+
+  /* derived blocks (report.js) */
+  .derived .note { font-size: 13px; color: var(--muted); }
+  .derived pre.mermaid { background: transparent; color: inherit; white-space: pre; max-height: none; }
+  details.diff > summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+  details.diff .d2h-wrapper { margin-top: 12px; }
+  @media (max-width: 640px) { section, .derived { padding: 16px; } .size { position: static; align-self: flex-start; } }
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <div class="topline">
+      <a class="back" href="../index.html">← All requests</a>
+      <span class="path">requests_and_response/{{slug}}/</span>
+    </div>
+    <div class="headrow">
+      <div class="headtext">
+        <div class="eyebrow">Request report</div>
+        <h1>{{Title in a few words}}</h1>
+        <!-- Step 6: one or two sentences on what was done and the outcome (leave empty until then). -->
+        <p class="lede"></p>
+      </div>
+      <div class="verdict-box" id="verdict-box"><div class="lbl">Evidence review</div><div><span class="vpill">not reviewed</span></div><div class="vsub"></div></div>
+    </div>
+    <div class="metaline" id="metaline"><span>Started <b>{{YYYY-MM-DD HH:MM}}</b></span></div>
+    <div class="kpis" id="kpis"></div>
+  </div>
+</header>
+<nav class="sections" aria-label="Sections"><div class="wrap">
+  <a href="#request">Request</a><a href="#interpretations">Interpretations</a><a href="#tasks">Tasks</a><a href="#plan">Plan</a><a href="#timeline">Timeline</a><a href="#execution">Execution</a><a href="#errors">Errors</a><a href="#task-summary">Changes</a><a href="#diff">Diff</a><a href="#review">Review</a><a href="#follow-ups">Follow-ups</a>
+</div></nav>
+<main class="wrap">
+  <!-- Step 2 -->
+  <div class="duo">
+  <section id="request">
+    <h2>Original request (verbatim)</h2>
+    <pre>{{the request, HTML-escaped}}</pre>
+  </section>
+
+  <section id="understood">
+    <h2>What I understood was requested</h2>
+    <ul><li>{{one concrete deliverable or constraint per bullet}}</li></ul>
+  </section>
+  </div>
+
+  <section id="interpretations">
+    <h2>Interpretations</h2>
+    <div class="interp"><q>{{ambiguous wording}}</q>{{readings considered, the one chosen, and why}}</div>
+    <!-- or: <p>None.</p> -->
+  </section>
+
+  <!-- Step 3 -->
+  <section id="tasks">
+    <h2>Tasks and how each is verified</h2>
+    <div class="scroll"><table>
+      <tr><th>#</th><th>Task</th><th>Depends on</th><th>Verified by</th></tr>
+      <tr><td>T1</td><td>{{task}}</td><td>—</td><td>{{the concrete check: command, test, Chrome step, screenshot}}</td></tr>
+    </table></div>
+  </section>
+
+  <!-- Step 4. At the start of each step run: python3 .claude/skills/request-log/log_step.py "<step label>"
+       (the timeline below is drawn from those marks, the review rounds and the commit). -->
+  <section id="plan">
+    <h2>Implementation plan</h2>
+    <ol>
+      <li><span class="tag single">single</span>{{step}} (T1)</li>
+      <li><span class="tag parallel">parallel</span>{{steps that run at the same time}} (T2 ‖ T3 ‖ T4)</li>
+    </ol>
+  </section>
+
+  <div class="derived" id="timeline"><h2>Timeline</h2><p class="note">Drawn from derived.js when the page loads.</p></div>
+
+  <!-- Step 6 -->
+  <section id="execution">
+    <h2>Execution summary</h2>
+    <ul><li>{{what was done per step, files changed, anything skipped and why}}</li></ul>
+    <h3>Verification</h3>
+    <ul><li>{{each task's check and its result}}</li><li>Evidence review: {{PASS - see Evidence review below}}</li></ul>
+    <h3>Evidence</h3>
+    <!-- Images sit in this request's folder, next to this file: reference them by file name only. -->
+    <!-- UI changes: one figure per changed view (capture_pages.py after -> ui-<view>.jpg, BEFORE | AFTER) -->
+    <figure><img src="ui-{{view}}.jpg" alt="{{view}} before and after"><figcaption>{{view}}: {{what changed}}</figcaption></figure>
+    <p>Unchanged views: {{list from ui-changes.json}}</p>
+    <!-- Behaviour changes: record_flow.py -> <name>.gif (evidence) + <name>-frames.jpg (what was reviewed) + <name>-checks.json -->
+    <figure><img src="{{flow}}.gif" alt="{{flow}}"><figcaption>{{the sequence: action, then reaction}}</figcaption></figure>
+    <figure><img src="{{flow}}-frames.jpg" alt="{{flow}} frames"><figcaption>Frames from the GIF · checks: {{name: PASS, ...}}</figcaption></figure>
+  </section>
+
+  <!-- Step 6: every error during this request - a failed or rejected command or tool call, a hook
+       block, an evidence-review FAIL, a wrong assumption caught later, a defect found while testing,
+       anything redone. One row each. Root cause: ask "why?" until the answer is something the
+       template, a hook, a script or a check can change ("why? ... -> why? ... -> root: ..."). The
+       prevention targets that root, tagged <span class="prev applied">applied</span> with where, or
+       <span class="prev suggested">suggested</span> (suggested ones appear in the index's Open
+       preventions panel). If nothing went wrong, replace the table with: <p>No errors.</p> -->
+  <section id="errors">
+    <h2>Errors and prevention</h2>
+    <div class="scroll"><table class="errs rc">
+      <tr><th>#</th><th>What went wrong</th><th>Cause</th><th>Root cause (why-chain)</th><th>How it was resolved</th><th>Prevention</th></tr>
+      <tr><td>E1</td><td>{{what failed, quoting the error text}}</td><td>{{the immediate cause}}</td><td>{{why? ... → why? ... → root: something the process can change}}</td><td>{{the fix or workaround}}</td><td><span class="prev {{applied|suggested}}">{{applied|suggested}}</span>{{the concrete change that removes the root cause, and where it was applied}}</td></tr>
+    </table></div>
+  </section>
+
+  <!-- task-done step 4, BEFORE the single commit: after `git add`, list every file from
+       `git diff --cached --name-status`. The commit sha is looked up from git and shown in the header.
+       For a request that changed no code, write "No code changes - nothing pushed." in place of the table. -->
+  <section id="task-summary">
+    <h2>Task summary</h2>
+    <h3>Task</h3>
+    <p>{{what was asked, 1-3 lines}}</p>
+    <h3>Changes by file</h3>
+    <div class="scroll"><table>
+      <tr><th>File</th><th>Change</th></tr>
+      <tr><td><code>{{path}}</code></td><td>{{added / modified / deleted - what changed and why}}</td></tr>
+    </table></div>
+    <h3>Shipped verification</h3>
+    <ul>
+      <li>Local: {{pages checked, result}}</li>
+      <li>Hosted preview: {{url, pages checked, result - or "no preview configured"}}</li>
+      <li>Not verified: {{anything skipped, or "nothing"}}</li>
+    </ul>
+  </section>
+
+  <div class="derived" id="diff"><h2>Diff</h2><p class="note">Drawn from derived.js when the page loads.</p></div>
+
+  <!-- Written by the evidence-reviewer agent only. data-verdict is PASS or FAIL; the agent replaces
+       this whole section on every run. -->
+  <section id="review" data-verdict="">
+    <h2>Evidence review</h2>
+    <p><span class="verdict {{pass|fail}}">{{PASS | FAIL}}</span> · reviewed {{YYYY-MM-DD HH:MM}} by the evidence-reviewer agent</p>
+    <ul class="checks">
+      <li class="{{ok|no}}">Report complete: {{what was seen}}</li>
+      <li class="{{ok|no}}">Every image exists: {{what was seen}}</li>
+      <li class="{{ok|no}}">UI before/after: {{what was seen, or "not applicable"}}</li>
+      <li class="{{ok|no}}">Flow GIFs and checks: {{what was seen, or "not applicable"}}</li>
+      <li class="{{ok|no}}">Claims match evidence: {{what was seen}}</li>
+    </ul>
+    <h3>Problems</h3>
+    <ul><li>{{section: what is wrong and what would fix it - or "None"}}</li></ul>
+  </section>
+
+  <!-- Step 6: 2-5 next steps that carry the user's underlying goal further, most valuable first.
+       Each names the gap it closes - not generic advice. Shown on this request's card in the index. -->
+  <section id="follow-ups">
+    <h2>Suggested follow-ups</h2>
+    <ol class="next">
+      <li><b>{{follow-up, phrased as a request the user could send}}</b><span class="size">{{S | M | L}}</span><br><span class="why">{{why: what it builds on or which gap from this request it closes}}</span></li>
+    </ol>
+  </section>
+</main>
+<script src="derived.js"></script>
+<script src="../assets/report.js"></script>
+</body>
+</html>

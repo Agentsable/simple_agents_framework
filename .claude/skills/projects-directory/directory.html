@@ -1,0 +1,176 @@
+<title>Template Projects</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: the request log's dark header band over one wide table; each row is one project, its
+     pushed version in the second column; on narrow screens the table scrolls inside its card. */
+  :root {
+    --bg:#F3F4F6; --card:#FFFFFF; --fg:#15171C; --text:#1E2230; --label:#5A6170; --line:#E3E6EB; --soft:#F6F7F9;
+    --chip:#EEF0F4; --accent:#2347C5; --ok:#17663F; --ok-soft:#E6F4EC; --warn:#9A4A07; --warn-soft:#FCEFE3;
+    --band:#121418; --band2:#16181D; --band-line:#2A2E37; --band-fg:#E8EAEE; --band-muted:#A9B1C2; --band-text:#C5CBD6; --band-accent:#8FA6FF;
+    --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --display: "Space Grotesk", Inter, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#0E1013; --card:#171A20; --fg:#ECEEF2; --text:#DDE1E8; --label:#98A0AF; --line:#2A2E37; --soft:#1C2027;
+    --chip:#232831; --accent:#8FA6FF; --ok:#3DD68C; --ok-soft:#14301F; --warn:#FFB86B; --warn-soft:#3A2812; color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --bg:#0E1013; --card:#171A20; --fg:#ECEEF2; --text:#DDE1E8; --label:#98A0AF; --line:#2A2E37; --soft:#1C2027;
+    --chip:#232831; --accent:#8FA6FF; --ok:#3DD68C; --ok-soft:#14301F; --warn:#FFB86B; --warn-soft:#3A2812; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }  /* .empty sets display: grid, which would beat the plain attribute */
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 var(--sans); }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--band); }
+  .wrap { max-width: 1320px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  header { background: var(--band); color: var(--band-fg); }
+  header .wrap { padding-block: 32px 30px; display: flex; flex-direction: column; gap: 14px; }
+  .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--band-accent); overflow-wrap: anywhere; }
+  h1 { margin: 0; font: 600 clamp(30px, 5vw, 44px)/1.05 var(--display); letter-spacing: -.02em; color: #FFFFFF; text-wrap: balance; }
+  header p { margin: 0; max-width: 760px; color: var(--band-text); }
+  header p code { color: var(--band-fg); background: var(--band2); border: 1px solid var(--band-line); padding: 0 5px; border-radius: 5px; font: 13px var(--mono); }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; }
+  .stat { border: 1px solid var(--band-line); background: var(--band2); border-radius: 8px; padding: 6px 12px; font-size: 13px; color: var(--band-muted); }
+  .stat b { color: #FFFFFF; font: 600 15px var(--display); font-variant-numeric: tabular-nums; margin-right: 4px; }
+  main.wrap { padding-block: 24px 64px; display: flex; flex-direction: column; gap: 12px; }
+  .note { margin: 0; font-size: 13.5px; color: var(--label); }
+  .note.warn { color: var(--warn); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; min-width: 0; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 1080px; }
+  th { text-align: left; font-size: 11.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--label); padding: 12px 14px; background: var(--soft); border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 14px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--text); }
+  tr:last-child td { border-bottom: 0; }
+  .name { font: 600 16px/1.3 var(--display); color: var(--fg); }
+  .tag { display: inline-block; margin-top: 4px; font: 600 11px/1 var(--sans); padding: 4px 8px; border-radius: 999px; background: var(--chip); color: var(--accent); }
+  .ver { font: 600 22px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--fg); }
+  .ver small { font: 500 12px var(--sans); color: var(--label); margin-left: 4px; }
+  .sub { font-size: 12.5px; color: var(--label); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  td.c-push { min-width: 150px; } td.c-git { min-width: 210px; max-width: 260px; overflow-wrap: anywhere; } td.c-name { min-width: 170px; max-width: 250px; overflow-wrap: anywhere; } td.c-folder { min-width: 250px; max-width: 320px; }
+  td.c-start { min-width: 170px; max-width: 240px; } td.c-urls { white-space: nowrap; }
+  .unpushed { color: var(--warn); }
+  code, .path { font: 12.5px/1.45 var(--mono); overflow-wrap: anywhere; }
+  .path { color: var(--text); }
+  a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  ul.urls { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .none { color: var(--label); font-size: 13px; }
+  .copy { margin-top: 6px; font: 500 12px var(--sans); padding: 4px 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
+  .copy:hover { border-color: var(--accent); }
+  .empty { padding: 28px 22px; display: grid; gap: 6px; }
+  .empty b { font: 600 17px var(--display); }
+  .empty p { margin: 0; color: var(--label); max-width: 720px; }
+</style>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">claude_template_request_tasks_and_evidance_html</div>
+    <h1>Template Projects</h1>
+    <p>Every project that uses the request, task and evidence template. A row is added when a project takes the template and refreshed after every push: <code>register_project.py</code> prints it and Claude writes it here. The version counts pushes since the project was first listed.</p>
+    <div class="stats" id="stats"></div>
+  </div>
+</header>
+<main class="wrap">
+  <p class="note" id="status">Loading the directory…</p>
+  <div class="card" id="card">
+    <div class="empty" id="empty">
+      <b>No projects listed yet</b>
+      <p>Projects appear here once they register. In a project that uses the template, ask Claude to "register this project in the projects directory", or run <code>/update-template</code>, which registers at the end.</p>
+    </div>
+    <div class="scroll" id="tablewrap" hidden>
+      <table>
+        <thead><tr>
+          <th scope="col">Project</th><th scope="col">Version</th><th scope="col">Last push</th><th scope="col">Git</th>
+          <th scope="col">Local folder</th><th scope="col">Request log</th><th scope="col">Start</th>
+          <th scope="col">Local</th><th scope="col">Deployed</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, props = {}, ...kids) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === "class") n.className = v; else if (k === "text") n.textContent = v; else n.setAttribute(k, v);
+    }
+    for (const k of kids) if (k != null) n.append(k);
+    return n;
+  };
+  const isUrl = (u) => typeof u === "string" && /^https?:\/\/\S+$/.test(u);
+  const link = (href, text) => isUrl(href) ? el("a", { href, target: "_blank", rel: "noopener", text: text || href }) : el("span", { class: "none", text: "—" });
+  const when = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d)) return String(iso);
+    return d.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
+  const copyButton = (text, label) => {
+    const b = el("button", { class: "copy", type: "button", text: label });
+    b.addEventListener("click", () => {
+      const done = () => { b.textContent = "Copied"; setTimeout(() => (b.textContent = label), 1400); };
+      const pick = () => { const r = document.createRange(); r.selectNodeContents(b.previousElementSibling || b); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected: press Copy"; };
+      try { navigator.clipboard.writeText(text).then(done, pick); } catch (e) { pick(); }
+    });
+    return b;
+  };
+  const urls = (list) => {
+    const items = (Array.isArray(list) ? list : []).filter(isUrl);
+    if (!items.length) return el("span", { class: "none", text: "none" });
+    return el("ul", { class: "urls" }, ...items.map((u) => el("li", {}, link(u, u.replace(/^https?:\/\//, "").replace(/\/$/, "")))));
+  };
+
+  function render(docs) {
+    const rows = docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) =>
+      (b.is_template === true) - (a.is_template === true) || String(a.name || a.id).localeCompare(String(b.name || b.id)));
+    const body = $("rows");
+    body.replaceChildren(...rows.map((r) => {
+      const sha = String(r.commit || "").slice(0, 7);
+      return el("tr", {},
+        el("td", { class: "c-name" }, el("div", { class: "name", text: r.name || r.id }), r.is_template ? el("span", { class: "tag", text: "the template" }) : null),
+        el("td", {}, el("div", { class: "ver", title: "Pushes since the project was first listed; the first is 1" }, r.version ? "v" + r.version : "—")),
+        el("td", { class: "c-push" },
+          r.commit_url ? link(r.commit_url, sha) : el("code", { text: sha || "—" }),
+          el("div", { class: "sub" + (r.pushed === false ? " unpushed" : ""), text: r.pushed === false ? "not pushed yet · " + when(r.pushed_at) : when(r.pushed_at) })),
+        el("td", { class: "c-git" }, r.git ? link(r.git, r.git.replace(/^https:\/\/(www\.)?github\.com\//, "")) : el("span", { class: "none", text: "no remote" })),
+        el("td", { class: "c-folder" }, el("div", { class: "path", text: r.folder || "—" }), r.folder ? copyButton(r.folder, "Copy path") : null),
+        el("td", {}, link(r.request_log, "Open log")),
+        el("td", { class: "c-start" }, r.start_sh
+          ? el("div", {}, el("a", { href: "file://" + encodeURI(r.start_sh), class: "path", text: "start.sh" }), el("div", {}, copyButton(r.start_cmd || r.start_sh, "Copy command")))
+          : r.start_cmd
+            ? el("div", {}, el("div", { class: "none", text: "no start.sh; start command:" }), el("code", { text: r.start_cmd.replace(/^cd "[^"]*" && /, "") }), el("div", {}, copyButton(r.start_cmd, "Copy command")))
+            : el("span", { class: "none", text: "no start.sh" })),
+        el("td", { class: "c-urls" }, urls(r.local_urls)),
+        el("td", { class: "c-urls" }, urls(r.deployed_urls)));
+    }));
+    $("empty").hidden = rows.length > 0;
+    $("tablewrap").hidden = rows.length === 0;
+    const latest = rows.map((r) => r.updated || "").sort().pop();
+    $("stats").replaceChildren(
+      el("span", { class: "stat" }, el("b", { text: String(rows.length) }), "projects"),
+      el("span", { class: "stat" }, el("b", { text: String(rows.reduce((n, r) => n + (Number(r.version) || 0), 0)) }), "pushes recorded"),
+      latest ? el("span", { class: "stat", text: "Last update " + when(latest) }) : null);
+  }
+
+  async function start() {
+    const db = await claude.use("db");
+    if (!db) { $("status").textContent = "The directory's data is not available in this view. Open the artifact on claude.ai while signed in."; $("status").className = "note warn"; return; }
+    const timer = setTimeout(() => { $("status").textContent = "The directory can't be reached yet; the rows below may be out of date."; $("status").className = "note warn"; }, 10000);
+    db.collection("projects").onSnapshot((snap) => {
+      render(snap.docs);
+      if (!snap.metadata.fromCache) { clearTimeout(timer); $("status").textContent = "Live: rows update as projects push."; $("status").className = "note"; }
+    }, (err) => {
+      clearTimeout(timer);
+      $("status").textContent = "Could not read the directory (" + (err && err.code || "error") + ").";
+      $("status").className = "note warn";
+    });
+  }
+  render([]);
+  $("status").textContent = "Loading the directory…";
+  if (window.claude && claude.use) start(); else { $("status").textContent = "Open this page on claude.ai to see the projects."; }
+})();
+</script>

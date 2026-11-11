@@ -1,0 +1,57 @@
+{
+  "_comment": "Everything project-specific for the .claude workflow lives here. Fill it in when you copy this template into a project. Hooks, skills and scripts read it; nothing else should hard-code these values. project_name: leave null to use the git repo name (from the git.remote URL, else the git folder name); set a string only to override it. app.base_url is the local site and app.deployed_url the deployed one (null if there is none; a list if there are several): the request log links to both at the top of its pages. app.local_urls lists any other localhost:port addresses the project serves (an API, a second app); the projects directory shows them all.",
+  "project_name": null,
+  "app": {
+    "start": null,
+    "base_url": null,
+    "deployed_url": null,
+    "local_urls": []
+  },
+  "checks": [],
+  "git": {
+    "remote": "origin",
+    "main_branch": "main",
+    "never_commit": []
+  },
+  "ui_paths": [
+    "src/*.jsx",
+    "src/*.tsx",
+    "src/*.js",
+    "src/*.ts",
+    "src/*.css",
+    "src/*.html",
+    "src/*.vue",
+    "src/*.svelte",
+    "index.html",
+    "tailwind.config.*"
+  ],
+  "ui_exclude": [
+    "src/routes/api/*",
+    "src/server/*",
+    "*.test.*",
+    "*.spec.*"
+  ],
+  "preview": {
+    "enabled": false,
+    "instructions": "How to verify the deployed build after a push, e.g. 'wait for the Vercel preview on the PR and open it', or the Base44 steps in .claude/skills/task-done/SKILL.md. Leave enabled=false if there is no hosted preview."
+  },
+  "template": {
+    "_comment": "Where this .claude/ folder came from. The update-template skill (/update-template) pulls newer versions from repo and branch. project_owned lists files that hold this project's own settings: the update never overwrites them (project.json only gets keys the template added).",
+    "repo": "https://github.com/spiceroutes/claude_template_request_tasks_and_evidance_html.git",
+    "branch": "main",
+    "project_owned": [
+      ".claude/project.json",
+      ".claude/skills/request-log/artifact.json",
+      ".claude/skills/ui-evidence/pages.json"
+    ]
+  },
+  "metrics": {
+    "_comment": "Tokens come from Claude Code's transcripts for each request's time window. Cost is shown only when pricing lists every model used, in USD per million tokens: {\"<model id>\": {\"input\": 0, \"output\": 0, \"cache_write\": 0, \"cache_read\": 0}}.",
+    "pricing": {}
+  },
+  "headless_narrative": {
+    "_comment": "Opt-in. When enabled, an async Stop hook (headless-narrative.sh) starts a separate claude -p run that drafts the Execution summary and Errors sections from <slug>/checks/*.txt. Each run spends tokens.",
+    "enabled": false,
+    "model": "haiku"
+  }
+}

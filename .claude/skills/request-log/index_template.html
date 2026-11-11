@@ -1,0 +1,155 @@
+<meta charset="utf-8">
+<title>{{PROJECT}} Request Log</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Same design language as the reports (new_design/Main.dc.html): dark header band with totals,
+     white cards on a light grey ground, Space Grotesk numbers, JetBrains Mono for slugs and shas. */
+  :root {
+    --bg:#F3F4F6; --card:#FFFFFF; --fg:#15171C; --text:#1E2230; --muted:#4A5160; --label:#5A6170;
+    --line:#E3E6EB; --line2:#ECEEF2; --soft:#F6F7F9; --chip:#EEF0F4; --accent:#2347C5;
+    --ok:#17663F; --ok-soft:#E6F4EC; --warn:#9A4A07; --warn-soft:#FCEFE3; --fail:#A3362A; --fail-soft:#F8E4E1; --idle:#4A5160; --idle-soft:#EEF0F4;
+    --band:#121418; --band2:#16181D; --band-line:#2A2E37; --band-fg:#E8EAEE; --band-muted:#A9B1C2; --band-text:#C5CBD6; --band-accent:#8FA6FF;
+    --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --display: "Space Grotesk", Inter, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#0E1013; --card:#171A20; --fg:#ECEEF2; --text:#DDE1E8; --muted:#A9B1C2; --label:#98A0AF;
+    --line:#2A2E37; --line2:#23272F; --soft:#1C2027; --chip:#232831; --accent:#8FA6FF;
+    --ok:#3DD68C; --ok-soft:#14301F; --warn:#FFB86B; --warn-soft:#3A2812; --fail:#F19A8C; --fail-soft:#3A1D19; --idle:#B3B9C2; --idle-soft:#262A30; color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --bg:#0E1013; --card:#171A20; --fg:#ECEEF2; --text:#DDE1E8; --muted:#A9B1C2; --label:#98A0AF;
+    --line:#2A2E37; --line2:#23272F; --soft:#1C2027; --chip:#232831; --accent:#8FA6FF;
+    --ok:#3DD68C; --ok-soft:#14301F; --warn:#FFB86B; --warn-soft:#3A2812; --fail:#F19A8C; --fail-soft:#3A1D19; --idle:#B3B9C2; --idle-soft:#262A30; color-scheme: dark; }
+  [hidden] { display: none !important; }  /* the filter hides cards with the hidden attribute */
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 var(--sans); }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--band); }
+  .wrap { max-width: 1200px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .band { background: var(--band); color: var(--band-fg); }
+  .band .wrap { padding-block: 32px 36px; display: flex; flex-direction: column; gap: 22px; }
+  .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--band-accent); overflow-wrap: anywhere; }
+  h1 { margin: 0; font: 600 clamp(32px, 5vw, 48px)/1.05 var(--display); letter-spacing: -.02em; color: #FFFFFF; }
+  .band p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--band-text); max-width: 760px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 1px; background: var(--band-line); border: 1px solid var(--band-line); border-radius: 12px; overflow: hidden; }
+  .kpi { background: var(--band2); padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .kpi .k { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--band-muted); }
+  .kpi .v { font: 600 28px/1.15 var(--display); color: #FFFFFF; font-variant-numeric: tabular-nums; }
+  .kpi .d { font-size: 13px; color: var(--band-text); }
+  main.wrap { padding-block: 28px 72px; display: flex; flex-direction: column; gap: 14px; }
+  h2.sec { margin: 18px 0 2px; font: 600 24px/1.2 var(--display); letter-spacing: -.01em; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  h2.sec small { font: 400 13px var(--sans); color: var(--label); }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { font: 500 13px/1 var(--sans); padding: 8px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--muted); cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--fg); border-color: var(--fg); color: var(--card); }
+  .chip:focus-visible, #q:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #q { flex: 1 1 200px; min-width: 0; font: 14px var(--sans); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
+  .req { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; align-items: start; }
+  .what { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .req h3 { margin: 0; font: 600 18px/1.3 var(--display); letter-spacing: -.005em; text-wrap: balance; }
+  .req h3 a { color: inherit; text-decoration: none; } .req h3 a:hover { color: var(--accent); text-decoration: underline; }
+  .sub { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 13px; color: var(--label); }
+  code { font: 12px var(--mono); color: var(--label); overflow-wrap: anywhere; }
+  .sha { color: var(--fg); background: var(--chip); padding: 1px 6px; border-radius: 5px; }
+  .side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .pill { font: 600 12px/1 var(--sans); padding: 5px 10px; border-radius: 999px; white-space: nowrap; text-decoration: none; }
+  .s-done { color: var(--ok); background: var(--ok-soft); } .s-in-progress, .s-planning { color: var(--warn); background: var(--warn-soft); } .s-logged { color: var(--idle); background: var(--idle-soft); }
+  .v-pass { color: var(--ok); background: var(--ok-soft); } .v-pending { color: var(--warn); background: var(--warn-soft); } .v-fail { color: var(--fail); background: var(--fail-soft); }
+  .errs { color: var(--warn); background: var(--warn-soft); } a.errs:hover { text-decoration: underline; }
+  .open { font-weight: 600; font-size: 14px; color: var(--accent); white-space: nowrap; text-decoration: none; }
+  .open:hover { text-decoration: underline; } .open.muted { color: var(--label); font-weight: 400; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr)); gap: 1px; background: var(--line2); border: 1px solid var(--line2); border-radius: 10px; overflow: hidden; }
+  .m { background: var(--soft); padding: 8px 12px; min-width: 0; }
+  .m .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--label); }
+  .m .v { font: 600 17px/1.3 var(--display); font-variant-numeric: tabular-nums; color: var(--fg); }
+  .results { border-top: 1px solid var(--line2); padding-top: 12px; display: grid; gap: 8px; }
+  .results-label { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--label); }
+  .figs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: 10px; }
+  figure { margin: 0; display: grid; gap: 4px; min-width: 0; }
+  figure img { width: 100%; height: 140px; object-fit: cover; object-position: top; border: 1px solid var(--line); border-radius: 8px; display: block; background: var(--bg); }
+  figcaption { font-size: 12px; color: var(--label); overflow-wrap: anywhere; }
+  .next { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; color: var(--text); }
+  .next li::marker { color: var(--accent); font: 500 12px var(--mono); }
+  .empty { color: var(--label); margin: 0; }
+  /* open preventions */
+  .prevs { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .prevs summary { cursor: pointer; padding: 16px 20px; font-weight: 600; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+  .prevs summary small { font-weight: 400; font-size: 13px; color: var(--label); }
+  .prev-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line2); }
+  .prev-list li { padding: 14px 20px; border-bottom: 1px solid var(--line2); display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: 4px 16px; }
+  .prev-list li:last-child { border-bottom: 0; }
+  .prev-list .src { font: 12px/1.5 var(--mono); color: var(--label); overflow-wrap: anywhere; }
+  .prev-list .src a { color: var(--accent); }
+  .prev-list .fix { font-size: 14px; color: var(--text); }
+  .prev-list .was { font-size: 13px; color: var(--label); margin-top: 2px; }
+  @media (max-width: 640px) {
+    .row { grid-template-columns: 1fr; } .side { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+    .prev-list li { grid-template-columns: 1fr; }
+  }
+  .back { display: inline-block; margin-bottom: 14px; color: var(--band-accent); font-size: 14px; text-decoration: none; }
+  .pill.kind-summary { background: var(--chip); color: var(--accent); }
+  .covers { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .covers li { font-size: 12.5px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+  .covers a { color: inherit; text-decoration: none; }
+  /* links to the project's local and deployed site (app.base_url, app.deployed_url in project.json) */
+  .sites { display: flex; flex-wrap: wrap; gap: 8px; }
+  .site { display: inline-flex; align-items: baseline; gap: 8px; max-width: 100%; padding: 7px 12px; border: 1px solid var(--band-line); border-radius: 8px; background: var(--band2); color: var(--band-fg); font-size: 13px; font-weight: 600; text-decoration: none; }
+  .site code { color: var(--band-muted); font-weight: 400; min-width: 0; }
+  a.site:hover { border-color: var(--band-accent); } a.site:hover code { color: var(--band-fg); }
+  a.site::after { content: "↗"; color: var(--band-accent); font-weight: 400; }
+  .site.unset { border-style: dashed; background: transparent; color: var(--band-muted); font-weight: 500; }
+  .past { margin-top: 36px; }
+  .past-card { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; }
+  .past-card p { margin: 4px 0 0; color: var(--label); font-size: 13.5px; }
+  .group-head { margin: 28px 0 10px; font-size: 13px; color: var(--label); }
+</style>
+<header class="band">
+  <div class="wrap">
+    <nav class="sites" aria-label="Project sites">{{SITES}}</nav>
+    {{BACK}}<div class="eyebrow">{{PROJECT}} · requests_and_response</div>
+    <h1>{{HEADING}}</h1>
+    <p>{{INTRO}}</p>
+    <div class="kpis">{{KPIS}}</div>
+  </div>
+</header>
+<main class="wrap">
+  {{PREVENTIONS}}
+  <h2 class="sec">{{SECTION}} <small>{{COUNT}}</small></h2>
+  <div class="tools" role="search">
+    <button class="chip" type="button" data-filter="all" aria-pressed="true">All</button>
+    <button class="chip" type="button" data-filter="open" aria-pressed="false">Open</button>
+    <button class="chip" type="button" data-filter="done" aria-pressed="false">Done</button>
+    <input id="q" type="search" placeholder="Search requests" aria-label="Search requests">
+  </div>
+  {{REQUESTS}}
+  <p class="empty" id="none" hidden>No requests match.</p>
+  {{PAST}}
+</main>
+<script>
+(() => {
+  const cards = [...document.querySelectorAll(".req")];
+  const chips = [...document.querySelectorAll(".chip")];
+  const q = document.getElementById("q");
+  let filter = "all";
+  const apply = () => {
+    const term = q.value.trim().toLowerCase();
+    let shown = 0;
+    for (const c of cards) {
+      const st = c.dataset.status;
+      const okStatus = filter === "all" || (filter === "done" ? st === "done" : st !== "done");
+      const ok = okStatus && (!term || c.dataset.search.includes(term));
+      c.hidden = !ok; if (ok) shown++;
+    }
+    document.getElementById("none").hidden = shown > 0 || cards.length === 0;
+  };
+  chips.forEach(b => b.addEventListener("click", () => {
+    filter = b.dataset.filter;
+    chips.forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    apply();
+  }));
+  q.addEventListener("input", apply);
+})();
+</script>

@@ -4,3 +4,11 @@ __pycache__/
 .claude-trace
 dist/
 *.egg-info/
+
+# request log build outputs (.claude request-log rebuilds them; never committed)
+requests_and_response/index.html
+requests_and_response/assets/
+requests_and_response/past.html
+requests_and_response/*/derived.js
+requests_and_response/.build.lock
+requests_and_response/*/.narrative.*
