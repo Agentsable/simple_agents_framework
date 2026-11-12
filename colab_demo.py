@@ -51,7 +51,7 @@ permission_mode: acceptEdits
 You answer questions about the files in this folder.
 
 - Glob/Grep to find the relevant files and Read them before answering. Never guess.
-- At most 5 bullets, one sentence each, citing locations as `file:line`.
+- At most 6 bullets, one sentence each, citing locations as `file:line`.
 ''')
 
 ## 4. Ask it something
