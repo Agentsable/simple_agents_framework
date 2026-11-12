@@ -63,7 +63,9 @@ The project name shown on the index is the git repo's name, taken from the `git.
 
 The index and the Past tasks page start with links to the project's **local site** (`app.base_url`)
 and **deployed site** (`app.deployed_url`), both from `.claude/project.json`. An address that is
-empty or not http(s) shows as "not set" with the setting's name.
+empty or not http(s) shows as "not set" with the setting's name. Under them, on its own line, is a link to the
+project's **git repo**: the web page of the `git.remote` remote (ssh and scp-style URLs become https,
+credentials are dropped), or "Git repo: not set" when the project has no remote.
 
 ## The sequence
 

@@ -73,6 +73,11 @@ python3 /tmp/claude-template/.claude/skills/update-template/update_template.py -
 python3 /tmp/claude-template/.claude/skills/update-template/update_template.py --project <dir> --apply
 ```
 
+To roll a template change out to projects in the same request as the change itself, commit it in
+the template repo and install from there before pushing: `--source <template repo folder>` clones
+the local commit, while the lock and `project.json` keep the GitHub URL (push the template commit
+afterwards, so later updates can find it).
+
 For a new project that is not a git repo yet, add `--force` (there is nothing to protect). After the
 first update the project has this skill and a lock, and later updates run from inside it.
 
@@ -94,3 +99,34 @@ functions in `~/.zshrc` run it (from a cached clone at `~/.cache/claude-template
 starts. It skips folders outside a git repo, the home folder, projects that already have the
 template, the template repo itself, and projects that opt out with a `.claude/no-template` file or
 `CLAUDE_TEMPLATE_AUTO=0`. The SessionStart hook then signs the new project up in the directory.
+
+## A brand-new project: `ccnew`
+
+`ccnew`, run from a new folder, does the whole start of a project in one command:
+
+1. checks: `gh` is logged in, `<org>/<folder name>` does not exist on GitHub yet, the folder is not
+   the home folder, not a subfolder of another repo and has no `origin` (`--dry-run` stops here and
+   prints the plan);
+2. `git init -b main` (an existing repo without a remote is reused), installs the template with
+   `update_template.py --apply` from the cached clone (`~/.cache/claude-template`, or `--source`),
+   adds a README to an empty folder, and commits everything as one commit;
+3. `gh repo create <org>/<name> --private --source . --remote origin --push`;
+4. opens Claude Code (`ccyolo`, or `$CCNEW_LAUNCHER`) with a prompt to register the project in the
+   projects directory, the one step that needs a Claude session (`--no-claude` skips it).
+
+The org defaults to `spiceroutes`; `ccnew -r agentsable` (or `--org`, or `$CCNEW_ORG`) creates the repo in another organization, the name to the folder name with spaces
+as dashes (`--name`). The script is `new_project.sh` next to this file. The `ccnew` command is a zsh
+function in `~/.zshrc` (next to `ccyolo`):
+
+```zsh
+ccnew() {
+  local c="$HOME/.cache/claude-template"
+  if [ -d "$c/.git" ]; then GIT_TERMINAL_PROMPT=0 git -C "$c" pull -q --ff-only 2>/dev/null
+  else GIT_TERMINAL_PROMPT=0 git clone -q https://github.com/spiceroutes/claude_template_request_tasks_and_evidance_html.git "$c" || return 1; fi
+  bash "$c/.claude/skills/update-template/new_project.sh" "$@"
+}
+```
+
+(Without zsh, the standalone wrapper `ccnew` next to this file does the same from `~/.local/bin`.)
+It updates the cached template clone and runs that clone's `new_project.sh`, so new projects always
+get the template's latest pushed version.

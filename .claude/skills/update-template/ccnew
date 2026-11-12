@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# ccnew: start a new project from the current folder - private repo spiceroutes/<folder name>, the
+# .claude template installed, committed and pushed, then Claude Code opened to register it in the
+# Template Projects directory. Refreshes the cached template clone and runs its new_project.sh
+# (.claude/skills/update-template/new_project.sh in the template repo). ccnew --help for options.
+c="${CLAUDE_TEMPLATE_CACHE:-$HOME/.cache/claude-template}"
+repo="${CLAUDE_TEMPLATE_REPO:-https://github.com/spiceroutes/claude_template_request_tasks_and_evidance_html.git}"
+if [ -d "$c/.git" ]; then
+  GIT_TERMINAL_PROMPT=0 git -C "$c" pull -q --ff-only 2>/dev/null || echo "ccnew: could not update $c; using it as it is" >&2
+else
+  GIT_TERMINAL_PROMPT=0 git clone -q "$repo" "$c" || { echo "ccnew: could not clone $repo" >&2; exit 1; }
+fi
+s="$c/.claude/skills/update-template/new_project.sh"
+[ -f "$s" ] || { echo "ccnew: $s is missing (the template has no new_project.sh yet)" >&2; exit 1; }
+exec bash "$s" "$@"

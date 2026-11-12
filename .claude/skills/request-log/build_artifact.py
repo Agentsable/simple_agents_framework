@@ -83,6 +83,28 @@ def site_links() -> str:
     return "".join(out)
 
 
+
+def repo_web_url(url: str) -> str:
+    """The web page of a git remote URL: https and ssh:// URLs and scp-style git@host:org/name.git
+    all become https://host/org/name; user names and passwords are dropped. "" if it is not one."""
+    url = url.strip()
+    m = (re.match(r"^(?:https?|ssh|git)://(?:[^@/]+@)?([^/:]+)(?::\d+)?/(.+?)(?:\.git)?/*$", url)
+         or re.match(r"^[^@/:\s]+@([^:/\s]+):/?(.+?)(?:\.git)?/*$", url))
+    return f"https://{m.group(1)}/{m.group(2)}" if m else ""
+
+
+def repo_link() -> str:
+    """The git repo line of the log pages, under the site links: a link to the web page of the
+    project's remote (git.remote in .claude/project.json, default origin), or "not set"."""
+    remote = (project_config().get("git") or {}).get("remote", "origin")
+    url = repo_web_url(git("remote", "get-url", remote))
+    if not url:
+        return (f'<span class="site unset" title="Add a git remote named {html.escape(remote)}">'
+                f'Git repo: not set <code>git remote {html.escape(remote)}</code></span>')
+    shown = re.sub(r"^https://", "", url)
+    return f'<a class="site" href="{html.escape(url)}" target="_blank" rel="noopener"><span class="label">Git repo</span> <code>{html.escape(shown)}</code></a>'
+
+
 def project_name() -> str:
     """The name shown on the request log. project_name in .claude/project.json wins when set;
     otherwise it follows the git repo: the remote's repo name (git.remote, default origin), then
@@ -295,7 +317,8 @@ def page_html(name: str, heading: str, intro: str, section_title: str, count: st
     return (page.replace("{{PROJECT}}", html.escape(name)).replace("{{HEADING}}", heading).replace("{{INTRO}}", intro)
                 .replace("{{SECTION}}", section_title).replace("{{COUNT}}", count).replace("{{KPIS}}", kpi_html)
                 .replace("{{PREVENTIONS}}", prevs).replace("{{BACK}}", back).replace("{{PAST}}", past)
-                .replace("{{REQUESTS}}", cards).replace("{{SITES}}", site_links()))
+                .replace("{{REQUESTS}}", cards).replace("{{SITES}}", site_links())
+                .replace("{{REPO}}", repo_link()))
 
 
 def write_past(name: str, cleanups: list[dict]) -> Path | None:

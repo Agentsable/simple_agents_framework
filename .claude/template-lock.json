@@ -1,8 +1,8 @@
 {
   "repo": "https://github.com/spiceroutes/claude_template_request_tasks_and_evidance_html.git",
   "branch": "main",
-  "commit": "6d0357d3b538c76390f5eec0d1bb143caf3d82df",
-  "updated": "2026-11-11 22:48",
+  "commit": "0941622daf08619bbd82a537a60db0b1803e9cd7",
+  "updated": "2026-11-13 01:48",
   "files": [
     ".claude/agents/evidence-reviewer.md",
     ".claude/hooks/evidence-gate.sh",
@@ -39,6 +39,8 @@
     ".claude/skills/ui-evidence/record_flow.py",
     ".claude/skills/update-template/SKILL.md",
     ".claude/skills/update-template/attach_template.sh",
+    ".claude/skills/update-template/ccnew",
+    ".claude/skills/update-template/new_project.sh",
     ".claude/skills/update-template/update_template.py"
   ]
 }

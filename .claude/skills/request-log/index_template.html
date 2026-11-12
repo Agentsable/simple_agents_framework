@@ -100,6 +100,8 @@
   .site code { color: var(--band-muted); font-weight: 400; min-width: 0; }
   a.site:hover { border-color: var(--band-accent); } a.site:hover code { color: var(--band-fg); }
   a.site::after { content: "↗"; color: var(--band-accent); font-weight: 400; }
+  .sites.repo { margin-top: -12px; }  /* its own line, close under the site links */
+  .site .label { white-space: nowrap; }  /* a long repo name wraps, the label does not */
   .site.unset { border-style: dashed; background: transparent; color: var(--band-muted); font-weight: 500; }
   .past { margin-top: 36px; }
   .past-card { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; }
@@ -109,6 +111,7 @@
 <header class="band">
   <div class="wrap">
     <nav class="sites" aria-label="Project sites">{{SITES}}</nav>
+    <nav class="sites repo" aria-label="Git repo">{{REPO}}</nav>
     {{BACK}}<div class="eyebrow">{{PROJECT}} · requests_and_response</div>
     <h1>{{HEADING}}</h1>
     <p>{{INTRO}}</p>

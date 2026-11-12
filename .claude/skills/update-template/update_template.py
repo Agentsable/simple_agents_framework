@@ -214,17 +214,22 @@ def detect_app(root: Path) -> tuple[dict, list]:
     scripts = pkg.get("scripts") or {}
     pm = next((m for f, m in (("bun.lock", "bun"), ("bun.lockb", "bun"), ("pnpm-lock.yaml", "pnpm"),
                               ("yarn.lock", "yarn")) if (root / f).exists()), "npm")
-    start = "./start.sh" if (root / "start.sh").is_file() else (f"{pm} run dev" if "dev" in scripts
-                                                              else f"{pm} start" if "start" in scripts else None)
+    wrangler = (root / "wrangler.toml").is_file()
+    start = next((f"./{s}" for s in ("start.sh", "run.sh") if (root / s).is_file()), None) or (
+        f"{pm} run dev" if "dev" in scripts else f"{pm} start" if "start" in scripts
+        else "npx wrangler dev" if wrangler else None)
     base = None
-    for name in ["start.sh", "package.json", ".env", ".env.local", *sorted(p.name for p in root.glob("vite.config.*"))]:
+    port_re = r"(?:localhost|127\.0\.0\.1):(\d{2,5})|PORT:-(\d{2,5})|--port[ =](\d{2,5})"
+    for name in ["start.sh", "run.sh", "package.json", ".env", ".env.local", *sorted(p.name for p in root.glob("vite.config.*"))]:
         try:
-            m = re.search(r"(?:localhost|127\.0\.0\.1):(\d{2,5})", (root / name).read_text(errors="replace"))
+            m = re.search(port_re, (root / name).read_text(errors="replace"))
         except OSError:
             continue
         if m:
-            base = f"http://localhost:{m.group(1)}"
+            base = f"http://localhost:{next(g for g in m.groups() if g)}"
             break
+    if not base and wrangler and start == "npx wrangler dev":
+        base = "http://localhost:8787"  # wrangler dev's default port
     deps = {**(pkg.get("dependencies") or {}), **(pkg.get("devDependencies") or {})}
     if not base:
         base = ("http://localhost:5173" if "vite" in deps else "http://localhost:3000" if "next" in deps else None)
@@ -247,6 +252,11 @@ def fresh_owned(path: str, new: bytes) -> bytes:
         cfg["project_name"] = None
         cfg["app"] = app
         cfg["checks"] = checks
+        head = run("git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD", cwd=ROOT, check=False).stdout.decode().strip()
+        branch = head.split("/", 1)[1] if "/" in head else run(
+            "git", "branch", "--show-current", cwd=ROOT, check=False).stdout.decode().strip()
+        if branch and isinstance(cfg.get("git"), dict):
+            cfg["git"]["main_branch"] = branch  # the project's own main branch (master, trunk, ...)
         if isinstance(cfg.get("preview"), dict):
             cfg["preview"]["enabled"] = False
         return (json.dumps(cfg, indent=2, ensure_ascii=False) + "\n").encode()
@@ -308,6 +318,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--repo")
     ap.add_argument("--branch")
+    ap.add_argument("--source", help="clone the template from this local repo (its committed branch) instead "
+                    "of --repo; the lock still records --repo, so push that commit to it")
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--project", help="project folder (default: the project this script is in)")
@@ -334,7 +346,9 @@ def main() -> None:
                      "(or use --force):\n" + dirty)
 
     print(f"template: {repo} ({branch})")
-    tpl = Template(repo, branch)
+    if args.source:
+        print(f"source: {args.source} (local; push {branch} to the template repo so later updates find this commit)")
+    tpl = Template(str(Path(args.source).expanduser().resolve()) if args.source else repo, branch)
     try:
         if lock.get("commit") == tpl.commit:
             print(f"last update was already at {tpl.commit[:7]}; checking files anyway")

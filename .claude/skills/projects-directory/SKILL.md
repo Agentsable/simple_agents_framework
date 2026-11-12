@@ -41,7 +41,7 @@ Install with the template's own copy of the update script (it works on any folde
 python3 <template>/.claude/skills/update-template/update_template.py --project <new project> --apply --force
 ```
 
-(`--force` only when the new folder is not a git repo yet.) Then fill in the new project's
+(`--force` only when the new folder is not a git repo yet.) Or run `ccnew` in the new folder: it creates the private GitHub repo, installs and commits the template, pushes, and opens Claude Code to do the registration below (`.claude/skills/update-template/SKILL.md`, *A brand-new project*). Then fill in the new project's
 `.claude/project.json`, commit and push, and register it as above, from inside the new project.
 
 Opening Claude Code with `ccyolo` / `ccyolot` in a git project without the template does the
