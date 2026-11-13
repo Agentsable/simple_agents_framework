@@ -105,6 +105,16 @@ def repo_link() -> str:
     return f'<a class="site" href="{html.escape(url)}" target="_blank" rel="noopener"><span class="label">Git repo</span> <code>{html.escape(shown)}</code></a>'
 
 
+
+def folder_item() -> str:
+    """The project's folder on the machine that builds the log (its git top level, else the folder
+    that holds .claude/), as selectable text next to the Git repo link. Not a link: browsers do not
+    open file:// links from web pages."""
+    folder = git("rev-parse", "--show-toplevel") or str(ROOT)
+    return (f'<span class="site folder" title="The project folder on the machine that built this page">'
+            f'<span class="label">Local folder</span> <code>{html.escape(folder)}</code></span>')
+
+
 def project_name() -> str:
     """The name shown on the request log. project_name in .claude/project.json wins when set;
     otherwise it follows the git repo: the remote's repo name (git.remote, default origin), then
@@ -318,7 +328,7 @@ def page_html(name: str, heading: str, intro: str, section_title: str, count: st
                 .replace("{{SECTION}}", section_title).replace("{{COUNT}}", count).replace("{{KPIS}}", kpi_html)
                 .replace("{{PREVENTIONS}}", prevs).replace("{{BACK}}", back).replace("{{PAST}}", past)
                 .replace("{{REQUESTS}}", cards).replace("{{SITES}}", site_links())
-                .replace("{{REPO}}", repo_link()))
+                .replace("{{REPO}}", repo_link() + folder_item()))
 
 
 def write_past(name: str, cleanups: list[dict]) -> Path | None:

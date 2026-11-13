@@ -65,7 +65,9 @@ The index and the Past tasks page start with links to the project's **local site
 and **deployed site** (`app.deployed_url`), both from `.claude/project.json`. An address that is
 empty or not http(s) shows as "not set" with the setting's name. Under them, on its own line, is a link to the
 project's **git repo**: the web page of the `git.remote` remote (ssh and scp-style URLs become https,
-credentials are dropped), or "Git repo: not set" when the project has no remote.
+credentials are dropped), or "Git repo: not set" when the project has no remote. Next to it, **Local folder** shows the full path of the
+project's folder on the machine that built the page (its git top level), as text you can select and
+copy.
 
 ## The sequence
 

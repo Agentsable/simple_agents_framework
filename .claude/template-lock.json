@@ -1,8 +1,8 @@
 {
   "repo": "https://github.com/spiceroutes/claude_template_request_tasks_and_evidance_html.git",
   "branch": "main",
-  "commit": "0941622daf08619bbd82a537a60db0b1803e9cd7",
-  "updated": "2026-11-13 01:48",
+  "commit": "5ca406bfdb5c6b27c793a27fc9174ed7df99123b",
+  "updated": "2026-11-13 02:00",
   "files": [
     ".claude/agents/evidence-reviewer.md",
     ".claude/hooks/evidence-gate.sh",
